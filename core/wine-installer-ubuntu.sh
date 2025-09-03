@@ -45,6 +45,7 @@ echo "Adding the repositories... "
 spin &
 SPIN_PID=$!
 trap "kill -9 $SPIN_PID" `seq 0 15`
+
 #Insert interactive shell here
 sudo add-apt-repository universe -y &>> ./logs/repoLog2.txt
 {   
@@ -101,4 +102,4 @@ else
     echo
     echo "Abort."
 fi
-echo "The logs can be found at" $(pwd)"/"
+echo "The logs can be found at" $(pwd)"/logs/"

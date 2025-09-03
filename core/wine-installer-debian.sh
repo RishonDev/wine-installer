@@ -1,13 +1,12 @@
-while getopts ":v:" opt; do
-  case $opt in
-    v)
-      echo "3.0.0"
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      echo "-v Displays the version"
-      exit 1
-      ;;
+log_path =""
+while true; do
+  case "$1" in
+    -v | --verion ) VERBOSE=true; shift ;;
+    -l | --log ) DEBUG=true; shift ;;
+    -m | --memory ) MEMORY="$2"; shift 2 ;;
+    --debugfile ) DEBUGFILE="$2"; shift 2 ;;
+    -- ) shift; break ;;
+    * ) break ;;
   esac
 done
 
@@ -36,7 +35,7 @@ echo "Enabling 32-bit support... "
 spin &
 SPIN_PID=$!
 trap "kill -9 $SPIN_PID" `seq 0 15`
-sudo dpkg --add-architecture i386
+sudo dpkg --add-architecture i386 || { echo 'ERROR: Unable to enable 32-bit support.' ; exit 1; }
 kill -9 $SPIN_PID
 
 
@@ -83,7 +82,8 @@ echo "1)Stable build (Recommended)"
 echo "2)Development build (Recommended for testing use only)"
 echo "3)Staging build (Recommended for testing use only)"
 read -p "Select build channel:" build -n 1 -r
-if ["$build" = "1"]
+
+if [ "$build" = "1" ]
   build = "stable"
 fi
 if ["$build" = "2"]
@@ -99,10 +99,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]
     spin &
     SPIN_PID=$!
     trap "kill -9 $SPIN_PID" `seq 0 15`
-    sudo apt install winehq-"$build" winetricks &> ./logs/installLog.txt
+    sudo apt install winehq-"$build" winetricks &> ./logs/installLog.txt || {echo "ERROR: dpkg locked" && exit 1}
     winecfg &> ./logs/configLog.txt
 else
     echo
     echo "Abort."
 fi
-echo "The logs can be found at" $(pwd)"/"
+echo "The logs can be found at" $(pwd)"/logs/"
