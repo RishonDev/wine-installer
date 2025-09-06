@@ -1,4 +1,8 @@
 /Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/Backend.java
-/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/Button.java
-/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/Main.java
-/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/Panel.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/Terminal.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/WINE.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/theme/WButton.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/theme/WCheckBox.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/theme/WComboBox.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/theme/WPanel.java
+/Users/rishon/IdeaProjects/winehq-installer/winehq-installer-gui/src/main/java/org/javaopensoft/theme/WProgressBar.java

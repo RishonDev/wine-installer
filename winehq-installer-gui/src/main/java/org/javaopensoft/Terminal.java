@@ -1,14 +1,22 @@
 package org.javaopensoft;
 
-import lombok.Getter;
-
-import javax.swing.*;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 public class Terminal{
     private final JTextArea textArea = new JTextArea();
-    @Getter
+
+    public JTextArea getTextArea() {
+        return textArea;
+    }
+
+    public JScrollPane getScrollPane() {
+        return scrollPane;
+    }
+
     JScrollPane scrollPane = new JScrollPane(textArea);
     public Terminal() {
         textArea.setEditable(false);
