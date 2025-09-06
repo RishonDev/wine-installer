@@ -17,7 +17,7 @@ public class SlidingButtonDemo {
         // Timer controls animation
         Timer slideTimer = new Timer(5, null);
         slideTimer.addActionListener(new ActionListener() {
-            int targetX = 400; // where we want to stop
+            final int targetX = 400; // where we want to stop
 
             @Override
             public void actionPerformed(ActionEvent e) {

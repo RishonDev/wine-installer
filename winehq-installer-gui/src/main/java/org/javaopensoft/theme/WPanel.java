@@ -1,19 +1,20 @@
-package org.javaopensoft;
+package org.javaopensoft.theme;
+
+import org.javaopensoft.WINE;
 
 import javax.swing.*;
-import java.awt.*;
 import java.util.Objects;
 
-public class Panel extends JPanel {
+public class WPanel extends JPanel {
     private final JLabel background;
 
-    public Panel() {
+    public WPanel() {
         setLayout(null); // manual positioning
 
         // Background label
         background = new JLabel(new ImageIcon(
-                Objects.requireNonNull(Main.class.getResource("bg.jpg"))));
-        background.setBounds(0, 0, 643, 360);
+                Objects.requireNonNull(WINE.class.getResource("bg2.png"))));
+        background.setBounds(0, 0, 965, 540);
 
         // Add background FIRST so it stays at the back
         add(background);

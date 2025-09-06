@@ -1,11 +1,11 @@
-package org.javaopensoft;
+package org.javaopensoft.theme;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class Button extends JButton {
+public class WButton extends JButton {
 
-    public Button() {
+    public WButton() {
         setOpaque(false);
         setContentAreaFilled(false);
         setFocusPainted(false);
@@ -13,6 +13,16 @@ public class Button extends JButton {
         setFont(new Font("Arial", Font.BOLD, 16));
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setBorderPainted(false); // custom painting instead
+    }
+    public WButton(String s) {
+        setOpaque(false);
+        setContentAreaFilled(false);
+        setFocusPainted(false);
+        setForeground(Color.WHITE);
+        setFont(new Font("Arial", Font.BOLD, 16));
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
+        setBorderPainted(false); // custom painting instead
+        setText(s);
     }
 
     @Override
