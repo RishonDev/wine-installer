@@ -1,21 +1,36 @@
-# Wine Installer(Orignally as winehq_installer)
+# Wine Installer(Orignally winehq_installer)
 
-If you get a `permission denied` on any script present in this repository, even with `sudo`, run `sudo. chmod +x *.sh`, open a bug request.
+A universal Wine installer and manager for Linux.  
 
-(The READEME.md is not a file to be executed)
+---
 
-a simple set of shell scripts to Install\Remove the latest version of wine from winehq's official repositories without
-any error.
+## Quick Installation
 
-To install wine, Simply copy this:
+Clone the repository and make the script executable:
 
-Ubuntu:
-
+```bash
+git clone https://github.com/RishonDev/wine-installer.git
+cd wine-installer
+chmod +x wine-installer.sh
 ```
-sudo apt install git
-git clone https://github.com/RishonDev/winehq-installer.git
-cd winehq-installer
-chmod +x *.sh
-./winehq_installer.sh -r
-./winehq_installer.sh
+
+# Usage
+```bash
+./wine-installer.sh [options]
 ```
+| Flag                                      | Description                                       |
+| ----------------------------------------- | ------------------------------------------------- |
+| `--list`                                  | List all available Wine versions from WineHQ      |
+| `--install <ver\|stable\|staging\|devel>` | Install a specific Wine version or branch         |
+| `--download <version>`                    | Download source tarball for given version         |
+| `--uninstall`                             | Remove Wine                                       |
+| `--repair`                                | Reinstall current Wine                            |
+| `--revert`                                | Revert to distro-provided Wine                    |
+| `--current`                               | Show currently installed Wine version             |
+| `--clean`                                 | Remove Wine configs (`~/.wine`, `~/.config/wine`) |
+| `--upgrade`                               | Upgrade Wine packages to latest available         |
+| `--binarypath`                            | Show path of active Wine binary                   |
+| `-h, --help`                              | Show usage                                        |
+
+# Logs
+All logs can be found at: `wine-installer.log`
