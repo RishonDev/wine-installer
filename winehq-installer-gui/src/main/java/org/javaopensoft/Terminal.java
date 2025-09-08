@@ -1,34 +1,33 @@
 package org.javaopensoft;
 
-import javax.swing.JTextArea;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.IOException;
-public class Terminal{
-    private final JTextArea textArea = new JTextArea();
+import java.io.InputStreamReader;
 
-    public JTextArea getTextArea() {
-        return textArea;
+public class Terminal {
+    private final JTextArea textArea = new JTextArea();
+    JScrollPane scrollPane = new JScrollPane(textArea);
+
+    public Terminal() {
+        textArea.setEditable(false);
     }
 
     public JScrollPane getScrollPane() {
         return scrollPane;
     }
 
-    JScrollPane scrollPane = new JScrollPane(textArea);
-    public Terminal() {
-        textArea.setEditable(false);
+    public void setBounds(int x, int y, int l, int b) {
+        scrollPane.setBounds(x, y, b, l);
     }
+
     public Terminal(String command) {
         textArea.setEditable(false);
-        // Run command in background thread
         new Thread(() -> runCommand(command)).start();
     }
 
-    private void runCommand(String command) {
-        textArea.append("$ ".concat(command).concat("\n"));
+    public void runCommand(String command) {
+        textArea.append("$ " + command + "\n");
         try {
             ProcessBuilder builder = new ProcessBuilder();
             if (System.getProperty("os.name").toLowerCase().contains("win")) {
@@ -51,11 +50,9 @@ public class Terminal{
                     });
                 }
             }
-
             process.waitFor();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
-
 }

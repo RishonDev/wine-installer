@@ -28,4 +28,5 @@ public class WPanel extends JPanel {
         // Ensure background always stays behind
         setComponentZOrder(background, getComponentCount() - 1);
     }
+
 }

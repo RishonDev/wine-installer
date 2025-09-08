@@ -8,7 +8,7 @@ import java.awt.event.MouseEvent;
 
 public class WComboBox<E> extends JComboBox<E> {
 
-    private final Color borderColor = new Color(200, 0, 0);       // normal red
+    private final Color borderColor = new Color(200, 0, 0);        // normal red
     private final Color hoverBorderColor = new Color(255, 80, 80); // lighter red when hovering
     private final Color backgroundColor = new Color(20, 20, 20, 180); // dark translucent
     private final Color hoverBackground = new Color(40, 40, 40, 200); // darker on hover
@@ -58,15 +58,41 @@ public class WComboBox<E> extends JComboBox<E> {
 
         // Custom UI
         setUI(new BasicComboBoxUI() {
+
             @Override
             protected JButton createArrowButton() {
-                JButton button = new JButton("▼");
-                button.setFont(new Font("Arial", Font.BOLD, 12));
-                button.setForeground(Color.WHITE);
-                button.setContentAreaFilled(false);
-                button.setBorderPainted(false);
-                button.setFocusPainted(false);
+                JButton button = new JButton() {
+                    @Override
+                    protected void paintComponent(Graphics g) {
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                        // Fill background
+                        g2.setColor(isHovered ? hoverBackground : backgroundColor);
+                        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+
+                        // Draw border
+                        g2.setColor(isHovered ? hoverBorderColor : borderColor);
+                        g2.setStroke(new BasicStroke(2f));
+                        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+
+                        // Draw arrow
+                        g2.setFont(new Font("Arial", Font.BOLD, 12));
+                        FontMetrics fm = g2.getFontMetrics();
+                        String arrow = "▼";
+                        int x = (getWidth() - fm.stringWidth(arrow)) / 2;
+                        int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                        g2.setColor(Color.WHITE);
+                        g2.drawString(arrow, x, y);
+
+                        g2.dispose();
+                    }
+                };
+
                 button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                button.setFocusPainted(false);
+                button.setBorderPainted(false);
+                button.setContentAreaFilled(false);
                 return button;
             }
 
@@ -90,7 +116,6 @@ public class WComboBox<E> extends JComboBox<E> {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // make background transparent (UI handles drawing)
-        setBackground(new Color(0, 0, 0, 0));
+        setBackground(new Color(0, 0, 0, 0)); // transparent, UI handles drawing
     }
 }
