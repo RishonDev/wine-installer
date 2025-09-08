@@ -34,3 +34,5 @@ chmod +x wine-installer.sh
 
 # Logs
 All logs can be found at: `wine-installer.log`
+
+***@Powered by Jetbrains***
