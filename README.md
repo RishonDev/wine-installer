@@ -1,7 +1,7 @@
 # Wine Installer(Orignally winehq_installer)
 
 A universal Wine installer and manager for Linux.  
-
+(GUI version coming soon)
 ---
 
 ## Quick Installation
