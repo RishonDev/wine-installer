@@ -25,7 +25,6 @@ public class Terminal {
         textArea.setEditable(false);
         new Thread(() -> runCommand(command)).start();
     }
-
     public void runCommand(String command) {
         textArea.append("$ " + command + "\n");
         try {
