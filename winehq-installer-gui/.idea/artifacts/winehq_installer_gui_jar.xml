@@ -3,6 +3,8 @@
     <output-path>$PROJECT_DIR$/out/artifacts/winehq_installer_gui_jar</output-path>
     <root id="archive" name="winehq-installer-gui.jar">
       <element id="module-output" name="winehq-installer-gui" />
+      <element id="library" level="project" name="Audio" />
+      <element id="library" level="project" name="jlayer-1.0.1.4" />
     </root>
   </artifact>
 </component>

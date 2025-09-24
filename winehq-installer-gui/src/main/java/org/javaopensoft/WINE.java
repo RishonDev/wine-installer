@@ -19,29 +19,47 @@ import jadt.utils.Audio.AudioMP3;
 public class WINE {
 
     private static byte function = 0;
+    private static byte backFunction = 1;
 
+    // === Frame & Layout ===
     private static final int FRAME_W = 965;
     private static final int FRAME_H = 540;
-
-    // Frame & layout
     private static final JFrame frame = new JFrame("Wine Installer");
     private static final CardLayout cardLayout = new CardLayout();
     private static final JPanel cards = new JPanel(cardLayout);
 
-    // Home / other screens components (kept as in original)
+    // === Welcome Screen ===
+    private static final WPanel welcomePanel = new WPanel();
+    private static final FadingLabel welcomeLabel = new FadingLabel("Welcome");
+    private static final FadingLabel clickLabel = new FadingLabel("Click anywhere to start");
+
+    // === Home Screen ===
+    private static final WPanel homePanel = new WPanel();
+    private static final WLabel homeLabel = new WLabel("Choose an option from below");
+    private static final WButton installButton = new WButton("Install Wine");
     private static final WButton remove = new WButton("Uninstall Wine");
     private static final WButton revert = new WButton("Go Back to Vanilla Wine");
     private static final WButton installVanilla = new WButton("Install Vanilla Wine");
     private static final WButton buildWineFromSource = new WButton("Build from Source (Advanced users only)");
 
-    // EULA screen components
+    // === EULA Screen ===
+    private static final WPanel eulaPanel = new WPanel();
     private static final JTextPane eula = new JTextPane();
     private static final JLabel eulaLabel = new JLabel("Software License Agreement:");
+    private static final JScrollPane scrollPane = new JScrollPane(eula);
+    private static final WCheckBox agree = new WCheckBox("I have read the Terms and Conditions");
     private static final WButton eulaOk = new WButton("Continue");
     private static final WButton eulaBack = new WButton("Back");
-    private static final JScrollPane scrollPane = new JScrollPane(eula);
-    private static final WPanel eulaPanel = new WPanel();
-    private static final WCheckBox agree = new WCheckBox("I have read the Terms and Conditions");
+
+    // === Terminal Screen ===
+    private static final WPanel terminalPanel = new WPanel();
+    private static final Terminal terminal = new Terminal();
+    private static final WLabel label = new WLabel("Choose your edition of wine:");
+    private static final WCheckBox installConfirm = new WCheckBox("I hereby confirm that I want these specifications when installing wine");
+    private static final WButton terminalRun = new WButton("Run");
+    private static final WButton terminalBack = new WButton("Back");
+    private static WComboBox<String> editionBox;
+    private static final WProgressBar progressBar = new WProgressBar(0, 100);
 
     /* ===== Custom fading label class that keeps WLabel behavior but supports alpha transparency ===== */
     static class FadingLabel extends WLabel {
@@ -77,17 +95,17 @@ public class WINE {
 
             // --- Welcome screen ---
             WPanel welcomePanel = new WPanel();
-            // use absolute positions (your WPanel seems to use addComponent + setBounds)
             welcomePanel.setLayout(null);
 
             FadingLabel welcomeLabel = new FadingLabel("Welcome");
             FadingLabel clickLabel = new FadingLabel("Click anywhere to start");
 
             // initial fonts / alpha
-            final int START_FONT = 100;
-            final int END_FONT = 36;
+            final int START_FONT = 200;
+            final int END_FONT = 70;
             welcomeLabel.setFont(new Font("Arial", Font.BOLD, START_FONT));
             welcomeLabel.setAlpha(1f);
+            welcomeLabel.setEnabled(false);
 
             clickLabel.setFont(new Font("Arial", Font.PLAIN, 18));
             clickLabel.setAlpha(0f); // invisible at start
@@ -130,7 +148,7 @@ public class WINE {
             Timer shrinkTimer = new Timer(30, null);
             shrinkTimer.addActionListener(e -> {
                 if (currentSize[0] > END_FONT) {
-                    currentSize[0] = currentSize[0] - 2; // step
+                    currentSize[0] = currentSize[0] - 6; // step
                     if (currentSize[0] < END_FONT) currentSize[0] = END_FONT;
                     welcomeLabel.setFont(new Font("Arial", Font.BOLD, currentSize[0]));
                     layoutWelcomeLabel.run();
@@ -154,8 +172,9 @@ public class WINE {
             shrinkTimer.start();
 
             // Click anywhere: fade out both labels then switch to home screen
-            welcomePanel.addMouseListener(new MouseAdapter() {
-                private boolean clicked = false; // prevent multiple triggers
+            MouseAdapter startClickHandler = new MouseAdapter() {
+                private boolean clicked = false;
+
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (clicked) return;
@@ -169,25 +188,24 @@ public class WINE {
                         clickLabel.setAlpha(Math.max(0f, a2));
                         if (a1 <= 0f && a2 <= 0f) {
                             ((Timer) ev.getSource()).stop();
-                            // switch to home after fade completes
                             cardLayout.show(cards, "home");
                         }
                     });
                     fadeOut.start();
                 }
-            });
+            };
+
+            welcomePanel.addMouseListener(startClickHandler);
+            welcomeLabel.addMouseListener(startClickHandler);
+            clickLabel.addMouseListener(startClickHandler);
 
             // --- Home screen ---
-            WPanel homePanel = new WPanel();
             homePanel.setLayout(null);
-
-            WLabel homeLabel = new WLabel("Choose an option from below");
             homeLabel.setFont(new Font("Arial", Font.BOLD, 20));
             homeLabel.setForeground(Color.WHITE);
             homeLabel.setBounds(20, 10, 600, 30);
             homePanel.addComponent(homeLabel);
 
-            WButton installButton = new WButton("Install Wine");
             installButton.setBounds(350, 60, 300, 50);
             remove.setBounds(350, 120, 300, 50);
             revert.setBounds(350, 180, 300, 50);
@@ -233,14 +251,16 @@ public class WINE {
             eulaBack.addActionListener(e -> cardLayout.show(cards, "home"));
 
             // --- Terminal screen (kept original layout) ---
-            WPanel terminalPanel = new WPanel();
-            Terminal terminal = new Terminal();
-
-            WLabel label = new WLabel("Choose your edition of wine:");
-            WCheckBox installConfirm = new WCheckBox("I hereby confirm that I want these specifications when installing wine");
-            WButton terminalRun = new WButton("Run");
-            WButton terminalBack = new WButton("Back");
-            String[] editions = {"Stable (Reliable)", "Staging (Balanced)", "Development (Newest features, may be buggy)"};
+            String[] versions = terminal.GetOutput("base.sh --list");
+            String[] editions = new String[versions.length+3];
+            editions[0] = "Stable (Reliable)";
+            editions[1] = "Staging (Balanced)";
+            editions[2]= "Development (Newest features, may be buggy)";
+            for(int i =0; i < versions.length; i++) {
+                if(!versions[i].equals("Could not detect distribution")){
+                    editions[i + 3] = versions[i];
+                }
+            }
             WComboBox<String> editionBox = new WComboBox<>(editions);
             WProgressBar progressBar = new WProgressBar(0, 100);
 
@@ -282,21 +302,61 @@ public class WINE {
                 function = 1;
             });
 
+            remove.addActionListener(e -> {
+                backFunction =2;
+                function = 2;
+                cardLayout.show(cards, "terminal");
+            });
             terminalRun.addActionListener(e -> {
                 String ver = switch (editionBox.getSelectedIndex()) {
                     case 0 -> "stable";
                     case 1 -> "staging";
                     case 2 -> "dev";
-                    default -> null;
+                    default -> String.valueOf(editionBox.getSelectedItem());
                 };
-                if (function == 1 && ver != null) {
-                    terminal.runCommand("chmod +x ./src/main/shell/base.sh");
-                    terminal.runCommand("./src/main/shell/base.sh --install " + ver);
-                }
-            });
+                if (ver != null) {
+                    switch (function) {
+                        case 1 -> {
+                            label.setVisible(true);
+                            editionBox.setVisible(true);
+                            terminalPanel.revalidate();
+                            terminalPanel.repaint();
+                            terminal.runScript("base.sh --install " + ver);
+                        }
 
+
+                        case 2 -> {
+                            label.setVisible(false);
+                            editionBox.setVisible(false);
+                            terminalPanel.revalidate();
+                            terminalPanel.repaint();
+                            byte option = (byte) WOptionPane.showConfirmDialog(terminalPanel, "Are you sure that you want to uninstall?", "Uninstall");
+                            switch (option) {
+                                case -1 -> {
+                                    while (option == -1)
+                                        option = (byte) WOptionPane.showConfirmDialog(terminalPanel, "Are you sure that you want to uninstall?", "Uninstall");
+                                }
+                                case 0 -> terminal.runCommand("base.sh --uninstall");
+                                case 1 -> {
+                                    function = 0;
+                                    cardLayout.show(cards, "home");
+                                }
+                            }
+                        }
+                        case 3 -> {
+
+                        }
+                }
+            }
+        });
             eulaOk.addActionListener(e -> cardLayout.show(cards, "terminal"));
-            terminalBack.addActionListener(e -> cardLayout.show(cards, "eula"));
+            terminalBack.addActionListener(e ->{
+                    switch (backFunction) {
+                        case 1 -> cardLayout.show(cards, "eula");
+                        case 2 -> cardLayout.show(cards, "home");
+                    }
+                }
+            );
 
             // --- Frame setup ---
             frame.setResizable(false);

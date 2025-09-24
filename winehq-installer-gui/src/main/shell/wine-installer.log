@@ -1,0 +1,18 @@
+Could not detect distribution
+Usage: ./base.sh [options]
+
+Options:
+  --list                  List all available Wine versions from WineHQ
+  --install <ver|stable|staging|devel>
+                          Install a specific Wine version or latest branch
+  --download <version>    Download source tarball for given version
+  --uninstall             Remove Wine
+  --repair                Reinstall current Wine
+  --revert                Revert to distro-provided Wine
+  --current               Show currently installed Wine version
+  --clean                 Remove Wine configs (~/.wine, ~/.config/wine)
+  --upgrade               Upgrade Wine packages to latest available
+  --binarypath            Show path of active Wine binary
+  -h, --help              Show this help
+Could not detect distribution
+Could not detect distribution

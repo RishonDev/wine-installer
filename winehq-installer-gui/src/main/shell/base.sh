@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ======================================================
 #  Wine Installer & Manager
-#  Author: Rishon (revamped by ChatGPT)
+#  Author: Rishon (revamped from original project)
 #  Description:
 #    A universal Wine installer/manager for Linux
 # ======================================================
@@ -10,8 +10,8 @@ set -euo pipefail
 
 LOG_FILE="./wine-installer.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
-
 REPO_URL="https://dl.winehq.org/wine/source"
+
 
 # ------------------ Usage ------------------
 function usage() {
@@ -19,17 +19,17 @@ cat <<EOF
 Usage: $0 [options]
 
 Options:
-  -l, --list                  List all available Wine versions from WineHQ
-  -i, --install <ver|stable|staging|devel>
+  --list                  List all available Wine versions from WineHQ
+  --install <ver|stable|staging|devel>
                           Install a specific Wine version or latest branch
-  -d, --download <version>    Download source tarball for given version
-  -u, --uninstall             Remove Wine
-  -rp, --repair                Reinstall current Wine
-  -r, --revert                Revert to distro-provided Wine
-  -cw, --current               Show currently installed Wine version
-  -c, --clean                 Remove Wine configs (~/.wine, ~/.config/wine)
-  -up, --upgrade               Upgrade Wine packages to latest available
-  -bp, --binarypath            Show path of active Wine binary
+  --download <version>    Download source tarball for given version
+  --uninstall             Remove Wine
+  --repair                Reinstall current Wine
+  --revert                Revert to distro-provided Wine
+  --current               Show currently installed Wine version
+  --clean                 Remove Wine configs (~/.wine, ~/.config/wine)
+  --upgrade               Upgrade Wine packages to latest available
+  --binarypath            Show path of active Wine binary
   -h, --help              Show this help
 EOF
 }
@@ -44,7 +44,7 @@ function detect_distro() {
         echo "Could not detect distribution"
         exit 1
     fi
-    echo "Detected: $DISTRO $VERSION"
+    #echo "Detected: $DISTRO $VERSION"
 }
 
 # Map derivative codenames back to Ubuntu base
@@ -59,82 +59,140 @@ function get_ubuntu_codename() {
         *) echo "$CODENAME" ;;
     esac
 }
+function check_dependencies() {
+    local missing=()
+    local deps=("curl" "lsb_release" "wget" "grep" "awk" "sort")
 
-# ------------------ Core Functions ------------------
-function list_versions() {
-    echo "Fetching available Wine versions from WineHQ..."
-    curl -s "$REPO_URL/" | \
-      grep -oP '(?<=href=")[0-9]+\.[0-9]+(?=/")' | \
-      while read branch; do
-        curl -s "$REPO_URL/$branch/" | \
-          grep -oP 'wine-\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=\.tar\.xz)'
-      done | sort -V | uniq
-}
+    for cmd in "${deps[@]}"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
 
-function install_version() {
-    VERSION=$1
-    echo "Requested install target: $VERSION"
+    if [ "${#missing[@]}" -eq 0 ]; then
+        #echo "All dependencies are installed."
+        return
+    fi
+
+    echo "Missing dependencies: ${missing[*]}"
+    echo "Attempting to install them..."
+
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO=$ID
+    else
+        echo "Unable to detect your Linux distribution. Please install these manually: ${missing[*]}"
+        exit 1
+    fi
 
     case "$DISTRO" in
         ubuntu|debian|linuxmint|pop|zorin)
-            sudo dpkg --add-architecture i386
-            sudo mkdir -pm755 /etc/apt/keyrings
-
-            CODENAME=$(get_ubuntu_codename)
-            REPO_SRC="https://dl.winehq.org/wine-builds/ubuntu/dists/$CODENAME/winehq-$CODENAME.sources"
-
-            echo "Using codename: $CODENAME"
-            if wget --spider "$REPO_SRC" 2>/dev/null; then
-                # 1. Add repo first
-                sudo wget -NP /etc/apt/sources.list.d/ "$REPO_SRC"
-                # 2. Add key second
-                wget -nc https://dl.winehq.org/wine-builds/winehq.key -O /etc/apt/keyrings/winehq-archive.key
-                # 3. Update
-                sudo apt update
-
-                case "$VERSION" in
-                    stable|staging|devel)
-                        echo "Installing latest $VERSION branch..."
-                        if ! sudo apt install --install-recommends "winehq-$VERSION" -y; then
-                            echo "Failed to install latest $VERSION branch. Falling back to distro Wine..."
-                            revert_wine
-                        fi
-                        ;;
-                    *)
-                        echo "Installing specific version $VERSION..."
-                        if ! sudo apt install --install-recommends "winehq-stable=$VERSION" -y; then
-                            echo "Version $VERSION not found in repo. Falling back to distro Wine..."
-                            revert_wine
-                        fi
-                        ;;
-                esac
-            else
-                echo "WineHQ does not provide packages for codename $CODENAME."
-                echo "Falling back to distro-provided Wine..."
-                revert_wine
-            fi
+            sudo apt update
+            sudo apt install -y "${missing[@]}"
             ;;
         fedora)
-            if [[ "$VERSION" =~ ^(stable|staging|devel)$ ]]; then
-                echo "Fedora repos only ship latest stable. Installing distro wine..."
-                revert_wine
-            else
-                echo "Fedora does not support installing version $VERSION directly. Use --download."
-            fi
+            sudo dnf install -y "${missing[@]}"
             ;;
         arch)
-            if [[ "$VERSION" =~ ^(stable|staging|devel)$ ]]; then
-                echo "Arch repos only ship latest stable. Installing distro wine..."
-                revert_wine
-            else
-                echo "Arch does not support installing version $VERSION directly. Use --download."
-            fi
+            sudo pacman -Sy --noconfirm "${missing[@]}"
             ;;
         *)
-            echo "Unsupported distribution: $DISTRO"
+            echo " Unsupported distro: $DISTRO. Install manually: ${missing[*]}"
+            exit 1
             ;;
     esac
 }
+
+# ------------------ Core Functions ------------------
+list_versions() {
+    BASE_URL="https://dl.winehq.org/wine/source"
+
+    # Fetch branches like "7.x" or "10.x"
+    branches=$(curl -s "$BASE_URL/" | grep -Po '(?<=href=")[0-9]+(?:\.[0-9]+)?(?:\.x)?/' | sed 's#/$##')
+
+    if [[ -z "$branches" ]]; then
+        return 1
+    fi
+
+    all_versions=()
+
+    for br in $branches; do
+        branch_url="$BASE_URL/$br/"
+
+        # Try to get 3-part versions first (like 7.0.1)
+        tarballs=$(curl -s "$branch_url" | grep -Po 'wine-[0-9]+\.[0-9]+\.[0-9]+\.tar\.xz' || true)
+
+        # If no 3-part versions, try 2-part (like 10.0)
+        if [[ -z "$tarballs" ]]; then
+            tarballs=$(curl -s "$branch_url" | grep -Po 'wine-[0-9]+\.[0-9]+\.tar\.xz' || true)
+        fi
+
+        if [[ -z "$tarballs" ]]; then
+            continue
+        fi
+
+        # Extract just version numbers, strip prefix/suffix
+        for tb in $tarballs; do
+            version=${tb#wine-}
+            version=${version%.tar.xz}
+            all_versions+=("$version")
+        done
+    done
+
+    if [[ ${#all_versions[@]} -eq 0 ]]; then
+        return 1
+    fi
+
+    # Print sorted unique versions only
+    printf "%s\n" "${all_versions[@]}" | sort -V | uniq
+}
+
+
+
+
+
+list_versions() {
+    BASE_URL="https://dl.winehq.org/wine/source"
+
+    # Fetch the folder names — match something like 1.0/ or 7.x/ or 10.x/
+    branches=$(curl -s "$BASE_URL/" | grep -Po '(?<=href=")[0-9]+(?:\.[0-9]+)?(?:\.x)?/' | sed 's#/$##')
+
+    if [[ -z "$branches" ]]; then
+        return 1
+    fi
+
+    all_versions=()
+
+    for br in $branches; do
+        branch_url="$BASE_URL/$br/"
+
+        # Fetch tarballs with 3-part version like wine-7.0.1.tar.xz
+        tarballs=$(curl -s "$branch_url" | grep -Po 'wine-[0-9]+\.[0-9]+\.[0-9]+\.tar\.xz' || true)
+
+        # If none found, try 2-part versions like wine-10.0.tar.xz
+        if [[ -z "$tarballs" ]]; then
+            tarballs=$(curl -s "$branch_url" | grep -Po 'wine-[0-9]+\.[0-9]+\.tar\.xz' || true)
+        fi
+
+        if [[ -z "$tarballs" ]]; then
+            continue
+        fi
+
+        # Remove duplicates just in case
+        tarballs=$(echo "$tarballs" | sort -u)
+        for tb in $tarballs; do
+            version=$(echo "$tb" | sed -E 's/wine-//; s/\.tar\.xz//')
+            all_versions+=("$version")
+        done
+    done
+
+    if [[ ${#all_versions[@]} -eq 0 ]]; then
+        return 1
+    fi
+
+    printf "%s\n" "${all_versions[@]}" | sort -V | uniq
+}
+
 
 function download_binaries() {
     VERSION=$1
@@ -239,31 +297,20 @@ function binarypath_wine() {
 # ------------------ Main ------------------
 if [ $# -eq 0 ]; then usage; exit 0; fi
 detect_distro
-
+check_dependencies
 case "$1" in
   --list) list_versions ;;
-  -l) list_versions ;;
   --install) shift; install_version "$1" ;;
-  -i) shift; install_version "$1" ;;
   --download) shift; download_binaries "$1" ;;
-  -d) shift; download_binaries "$1" ;;
   --uninstall) uninstall_wine ;;
-  -u) uninstall_wine ;;
-  -rp) repair_wine ;;
   --repair) repair_wine ;;
   --revert) revert_wine ;;
-  -r) revert_wine ;;
   --current) current_wine ;;
-  -cw) current_wine ;;
   --clean) clean_wine ;;
-  -c) clean_wine ;;
   --upgrade) upgrade_wine ;;
-  -up) upgrade_wine ;;
   --binarypath) binarypath_wine ;;
-  -bp) binarypath_wine ;;
-  --help) usage ;;
-  -h) usage;;
+  -h|--help) usage ;;
   *) echo "Unknown option: $1"; usage; exit 1 ;;
 esac
 
-echo "Completed. Logs saved to $LOG_FILE"
+#echo "Completed. Logs saved to $LOG_FILE"
