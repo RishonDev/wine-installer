@@ -16,17 +16,18 @@ public class WPanel extends JPanel {
                 Objects.requireNonNull(WINE.class.getResource("bg2.png"))));
         background.setBounds(0, 0, 965, 540);
 
-        // Add background FIRST so it stays at the back
-        add(background);
+        add(background); // add background first
     }
 
     public void addComponent(JComponent component) {
         component.setOpaque(false);
         add(component);
-        component.setVisible(true);
 
-        // Ensure background always stays behind
+        // Keep background at back
         setComponentZOrder(background, getComponentCount() - 1);
-    }
 
+        // Refresh panel
+        revalidate();
+        repaint();
+    }
 }

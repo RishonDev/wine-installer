@@ -19,7 +19,6 @@ import jadt.utils.Audio.AudioMP3;
 public class WINE {
 
     private static byte function = 0;
-    private static byte backFunction = 1;
 
     // === Frame & Layout ===
     private static final int FRAME_W = 965;
@@ -58,11 +57,17 @@ public class WINE {
     private static final WCheckBox installConfirm = new WCheckBox("I hereby confirm that I want these specifications when installing wine");
     private static final WButton terminalRun = new WButton("Run");
     private static final WButton terminalBack = new WButton("Back");
-    private static WComboBox<String> editionBox;
     private static final WProgressBar progressBar = new WProgressBar(0, 100);
-
+    // === Uninstall panel ===
+    private static final WPanel terminalPanel2 = new WPanel();
+    private static final WCheckBox installConfirm2 = new WCheckBox("I hereby confirm that I want these specifications when installing wine");
+    private static final WButton terminalRun2 = new WButton("Run");
+    private static final WButton terminalBack2 = new WButton("Back");
+    private static final WProgressBar progressBar2 = new WProgressBar(0, 100);
+    private static final Terminal terminal2 = new Terminal();
     /* ===== Custom fading label class that keeps WLabel behavior but supports alpha transparency ===== */
     static class FadingLabel extends WLabel {
+
         private float alpha = 1.0f;
 
         public FadingLabel(String text) {
@@ -105,7 +110,6 @@ public class WINE {
             final int END_FONT = 70;
             welcomeLabel.setFont(new Font("Arial", Font.BOLD, START_FONT));
             welcomeLabel.setAlpha(1f);
-            welcomeLabel.setEnabled(false);
 
             clickLabel.setFont(new Font("Arial", Font.PLAIN, 18));
             clickLabel.setAlpha(0f); // invisible at start
@@ -240,7 +244,7 @@ public class WINE {
             eulaPanel.addComponent(eulaBack);
             eulaPanel.addComponent(scrollPane);
             eulaPanel.addComponent(agree);
-
+            //eula.setContentType("text/html");
             StyledDocument doc = eula.getStyledDocument();
             SimpleAttributeSet center = new SimpleAttributeSet();
             StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
@@ -262,7 +266,7 @@ public class WINE {
                 }
             }
             WComboBox<String> editionBox = new WComboBox<>(editions);
-            WProgressBar progressBar = new WProgressBar(0, 100);
+            //WProgressBar progressBar = new WProgressBar(0, 100);
 
             terminal.setBounds(80, 100, 300, 800);
             terminalRun.setBounds(780, 470, 100, 30);
@@ -272,7 +276,12 @@ public class WINE {
             editionBox.setBounds(320, 50, 360, 30);
             label.setBounds(100, 50, 300, 30);
             installConfirm.setBounds(170, 430, 700, 30);
-
+            installConfirm2.setBounds(170, 430, 700, 30);
+            terminal2.setBounds(80, 100, 300, 800);
+            terminalRun2.setBounds(780, 470, 100, 30);
+            terminalRun2.setEnabled(false);
+            terminalBack2.setBounds(70, 470, 100, 30);
+            progressBar2.setBounds(80, 410, 800, 20);
             terminalPanel.addComponent(editionBox);
             terminalPanel.addComponent(terminalRun);
             terminalPanel.addComponent(terminalBack);
@@ -280,6 +289,11 @@ public class WINE {
             terminalPanel.addComponent(installConfirm);
             terminalPanel.addComponent(progressBar);
             terminalPanel.addComponent(terminal.getScrollPane());
+            terminalPanel2.addComponent(terminalRun2);
+            terminalPanel2.addComponent(terminalBack2);
+            terminalPanel2.addComponent(installConfirm2);
+            terminalPanel2.addComponent(progressBar2);
+            terminalPanel2.addComponent(terminal2.getScrollPane());
 
             installConfirm.addActionListener(e -> terminalRun.setEnabled(installConfirm.isSelected()));
 
@@ -288,6 +302,7 @@ public class WINE {
             cards.add(homePanel, "home");
             cards.add(eulaPanel, "eula");
             cards.add(terminalPanel, "terminal");
+            cards.add(terminalPanel2, "terminal2");
 
             // Taskbar icon (best-effort)
             try {
@@ -303,31 +318,25 @@ public class WINE {
             });
 
             remove.addActionListener(e -> {
-                backFunction =2;
                 function = 2;
-                cardLayout.show(cards, "terminal");
+                cardLayout.show(cards, "terminal2");
             });
             terminalRun.addActionListener(e -> {
                 String ver = switch (editionBox.getSelectedIndex()) {
                     case 0 -> "stable";
                     case 1 -> "staging";
-                    case 2 -> "dev";
+                    //case 2 -> "dev";
                     default -> String.valueOf(editionBox.getSelectedItem());
                 };
                 if (ver != null) {
                     switch (function) {
                         case 1 -> {
-                            label.setVisible(true);
-                            editionBox.setVisible(true);
-                            terminalPanel.revalidate();
-                            terminalPanel.repaint();
                             terminal.runScript("base.sh --install " + ver);
                         }
 
 
                         case 2 -> {
-                            label.setVisible(false);
-                            editionBox.setVisible(false);
+                            System.out.println(editionBox.isVisible());
                             terminalPanel.revalidate();
                             terminalPanel.repaint();
                             byte option = (byte) WOptionPane.showConfirmDialog(terminalPanel, "Are you sure that you want to uninstall?", "Uninstall");
@@ -382,25 +391,25 @@ public class WINE {
      * If resource is missing, returns a short friendly message.
      */
     public static String[] getEULA() {
-        ArrayList<String> lines = new ArrayList<>();
+        String[] lines = new String[516];
         InputStream is = WINE.class.getResourceAsStream("/org/javaopensoft/LICENSE.txt");
         if (is == null) {
-            lines.add("EULA file not found in resources.\n");
-            lines.add("Make sure /org/javaopensoft/LICENSE.txt is packaged inside the JAR.\n");
-            return lines.toArray(new String[0]);
+            System.err.println("""
+                    EULA file not found in resources.
+                    Make sure /org/javaopensoft/LICENSE.txt is packaged inside the JAR
+                    """);
+            System.exit(1);
+            return null;
         }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line + "\n");
+            for(int i = 0; i< lines.length; i++){
+                    lines[i] = reader.readLine() + "\n";
             }
         } catch (IOException e) {
             System.err.println("Error reading EULA: " + e.getMessage());
-            lines.clear();
-            lines.add("Error loading EULA.\n");
         }
-        return lines.toArray(new String[0]);
+        return lines;
     }
 
     /**
